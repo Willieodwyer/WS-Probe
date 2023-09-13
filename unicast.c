@@ -77,10 +77,14 @@ int main(int argc, char *argv[])
     socklen_t len;
     char buffer[2048]; 
     int n = recvfrom(sockfd, (char *)buffer, sizeof(buffer), 
-                MSG_WAITALL, (struct sockaddr *) &src_addr,
+                0, (struct sockaddr *) &src_addr,
                 &len);
     buffer[n] = '\0';
     printf("%s\n", buffer);   
+
+    char ip[16];
+    inet_ntop(AF_INET, &src_addr.sin_addr, ip, sizeof(ip));
+    printf("Received from %s\n", ip);
 
     close(sockfd);
     return 0;
