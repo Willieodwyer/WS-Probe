@@ -3,18 +3,18 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h> // for sleep()
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <uuid/uuid.h>
+#include <errno.h> // for errno
 
 int main(int argc, char *argv[])
 {
     if (argc != 4) {
        printf("Command line args should be interface_address ip_address and port\n");
-       printf("(e.g. for SSDP, `./unicast 172.27.40.208 3702`)\n");
+       printf("(e.g. for SSDP, `./unicast <interface_address> <ip_address> 3702`)\n");
        return 1;
     }
 
@@ -47,8 +47,18 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
    
+    // Set socket receive timeout
+    struct timeval tv;
+    tv.tv_sec = 1;  // 5 seconds timeout
+    tv.tv_usec = 0; // 0 microseconds
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv)) < 0) {
+        perror("setsockopt failed");
+        close(sockfd);
+        exit(EXIT_FAILURE);
+    }
+
     // Source
-    struct sockaddr_in     src_addr;
+    struct sockaddr_in src_addr;
     memset(&src_addr, 0, sizeof(src_addr));
     src_addr.sin_family = AF_INET;
     src_addr.sin_port = htons(9000); 
@@ -62,7 +72,7 @@ int main(int argc, char *argv[])
     }
 
     // Destination
-    struct sockaddr_in     dst_addr;
+    struct sockaddr_in dst_addr;
     memset(&dst_addr, 0, sizeof(dst_addr));
     dst_addr.sin_family = AF_INET;
     dst_addr.sin_port = htons(port);
@@ -73,19 +83,28 @@ int main(int argc, char *argv[])
             sizeof(dst_addr));
     printf("Message sent\n\n");
       
+    int error = 0;
     printf("Receiving...\n");
     socklen_t len;
     char buffer[2048]; 
     int n = recvfrom(sockfd, (char *)buffer, sizeof(buffer), 
                 0, (struct sockaddr *) &src_addr,
                 &len);
-    buffer[n] = '\0';
-    printf("%s\n", buffer);   
+    if (n < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            printf("Receive timed out\n");
+        } else {
+            perror("recvfrom failed");
+        }
+	error = -1;
+    } else {
+        buffer[n] = '\0';
+        printf("%s\n", buffer);   
 
-    char ip[16];
-    inet_ntop(AF_INET, &src_addr.sin_addr, ip, sizeof(ip));
-    printf("Received from %s\n", ip);
+        printf("Received from %s\n", ip_address);
+    }
 
     close(sockfd);
-    return 0;
+    return error;
 }
+
