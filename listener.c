@@ -12,14 +12,15 @@
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3) {
-       printf("Command line args should be multicast group and port\n");
-       printf("(e.g. for SSDP, `listener 239.255.255.250 1900`)\n");
+    if (argc != 4) {
+       printf("Command line args should be interface_address ip_address and port\n");
+       printf("(e.g. for WS-Discovery, `./listener <if address> 239.255.255.250 3702`)\n");
        return 1;
     }
 
-    char* group = argv[1]; // e.g. 239.255.255.250 for SSDP
-    int port = atoi(argv[2]); // 0 if error, which is an invalid port
+    char* if_address = argv[1]; // Interface Address
+    char* group = argv[2]; // e.g. 239.255.255.250 for SSDP
+    int port = atoi(argv[3]); // 0 if error, which is an invalid port
 
     // create what looks like an ordinary UDP socket
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -57,7 +58,7 @@ int main(int argc, char *argv[])
     // use setsockopt() to request that the kernel join a multicast group
     struct ip_mreq mreq;
     mreq.imr_multiaddr.s_addr = inet_addr(group);
-    mreq.imr_interface.s_addr = inet_addr("172.27.40.208");
+    mreq.imr_interface.s_addr = inet_addr(if_address);
     if (
         setsockopt(
             fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mreq, sizeof(mreq)

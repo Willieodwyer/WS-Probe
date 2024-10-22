@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
        return 1;
     }
 
-    char* if_address = argv[1]; // e.g. 239.255.255.250 for SSDP
+    char* if_address = argv[1]; // Interface Address
     char* ip_address = argv[2]; // e.g. 239.255.255.250 for SSDP
     int port = atoi(argv[3]); // 0 if error, which is an invalid port
 

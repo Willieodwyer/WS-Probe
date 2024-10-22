@@ -12,14 +12,15 @@
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3) {
-       printf("Command line args should be multicast group and port\n");
-       printf("(e.g. for SSDP, `multicast 239.255.255.250 1900`)\n");
+    if (argc != 4) {
+       printf("Command line args should be interface_address ip_address and port\n");
+       printf("(e.g. for WS-Discovery, `./multicast <if address> 239.255.255.250 3702`)\n");
        return 1;
     }
 
-    char* group = argv[1]; // e.g. 239.255.255.250 for SSDP
-    int port = atoi(argv[2]); // 0 if error, which is an invalid port
+    char* if_address = argv[1]; // Interface Address
+    char* group = argv[2]; // e.g. 239.255.255.250 for SSDP
+    int port = atoi(argv[3]); // 0 if error, which is an invalid port
 
     // !!! If test requires, make these configurable via args
     //
@@ -63,7 +64,7 @@ int main(int argc, char *argv[])
      * multicast-capable interface.
      */
     struct in_addr        localInterface;
-    localInterface.s_addr = inet_addr("172.27.40.208");
+    localInterface.s_addr = inet_addr(if_address);
     if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF,
                    (char *)&localInterface,
                    sizeof(localInterface)) < 0) {
